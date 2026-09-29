@@ -1,0 +1,1050 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CRC Error Detection Lab</title>
+
+    <style>
+        :root {
+            --bg: #070a12;
+            --panel: #0d1220;
+            --panel2: #0a0e19;
+            --line: #1b2a4a;
+            --text: #eaeef7;
+            --dim: #8b96b3;
+            --teal: #5b8def;
+            --coral: #ff6b5e;
+            --amber: #ffb238;
+            --mono: monospace;
+            --sans: Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            padding: 40px 20px;
+        }
+
+        .wrap {
+            max-width: 700px;
+            margin: auto;
+        }
+
+        .kicker {
+            font-size: 14px;
+            letter-spacing: 3px;
+            color: var(--teal);
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin: 0 0 18px;
+        }
+
+        .sub {
+            color: var(--dim);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 26px;
+            margin-bottom: 20px;
+        }
+
+        .section-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--teal);
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--dim);
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: var(--panel2);
+            border: 1px solid var(--line);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 17px;
+            padding: 13px;
+            border-radius: 8px;
+        }
+
+        input[type="text"]:focus {
+            outline: 2px solid var(--teal);
+        }
+
+        .hint {
+            color: var(--dim);
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .row > div {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .err {
+            color: var(--coral);
+            font-size: 13px;
+            min-height: 16px;
+            margin-top: 8px;
+        }
+
+        button {
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+        }
+
+        .primary {
+            background: var(--teal);
+            color: white;
+        }
+
+        .ghost {
+            background: var(--panel2);
+            color: var(--text);
+            border: 1px solid var(--line);
+        }
+
+        .ghost.selected {
+            border-color: var(--teal);
+            color: var(--teal);
+        }
+
+        .readout {
+            font-family: var(--mono);
+            font-size: 16px;
+            line-height: 2;
+        }
+
+        .readout .k {
+            color: var(--dim);
+            display: inline-block;
+            width: 120px;
+            font-size: 12px;
+        }
+
+        .channel-btns {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .subform {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px dashed var(--line);
+            display: none;
+        }
+
+        .subform.open {
+            display: block;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--mono);
+            font-size: 16px;
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .status.ok {
+            background: rgba(91, 141, 239, 0.1);
+            color: var(--teal);
+            border: 1px solid rgba(91, 141, 239, 0.35);
+        }
+
+        .status.bad {
+            background: rgba(255, 107, 94, 0.1);
+            color: var(--coral);
+            border: 1px solid rgba(255, 107, 94, 0.35);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .diff-hi {
+            color: var(--coral);
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+    <p class="kicker">CYCLIC REDUNDANCY CHECK</p>
+
+    <h1>Error Detection Lab</h1>
+
+    <p class="sub">
+        Encode data bits with a generator polynomial, send the codeword
+        through a noisy channel, and use CRC division at the receiver
+        to detect errors.
+    </p>
+
+
+    <!-- TRANSMITTER -->
+
+    <div class="card">
+
+        <p class="section-label">Transmitter</p>
+
+        <div class="row">
+
+            <div>
+                <label for="dataIn">Data Bits</label>
+
+                <input
+                    type="text"
+                    id="dataIn"
+                    value="1010101101"
+                >
+
+                <p class="hint">
+                    Binary only (0 and 1)
+                </p>
+            </div>
+
+
+            <div>
+
+                <label for="genIn">
+                    Generator Polynomial
+                </label>
+
+                <input
+                    type="text"
+                    id="genIn"
+                    value="1101"
+                >
+
+                <p class="hint">
+                    Example: 1101
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="err" id="setupErr"></div>
+
+        <button
+            class="primary"
+            id="transmitBtn"
+        >
+            Encode & Transmit
+        </button>
+
+    </div>
+
+
+    <!-- SENDER -->
+
+    <div
+        class="card hidden"
+        id="senderCard"
+    >
+
+        <p class="section-label">
+            Codeword
+        </p>
+
+        <div class="readout">
+
+            <div>
+                <span class="k">Data</span>
+                <span id="sData"></span>
+            </div>
+
+            <div>
+                <span class="k">CRC</span>
+                <span id="sCrc"></span>
+            </div>
+
+            <div>
+                <span class="k">Codeword</span>
+                <span id="sCode"></span>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- CHANNEL -->
+
+    <div
+        class="card hidden"
+        id="channelCard"
+    >
+
+        <p class="section-label">
+            Channel
+        </p>
+
+
+        <div class="channel-btns">
+
+            <button
+                class="ghost selected"
+                data-mode="none"
+            >
+                No Error
+            </button>
+
+            <button
+                class="ghost"
+                data-mode="single"
+            >
+                Single-bit Error
+            </button>
+
+            <button
+                class="ghost"
+                data-mode="burst"
+            >
+                Burst Error
+            </button>
+
+        </div>
+
+
+        <!-- SINGLE ERROR -->
+
+        <div
+            class="subform"
+            id="singleForm"
+        >
+
+            <label for="posIn">
+                Bit Position
+            </label>
+
+            <input
+                type="text"
+                id="posIn"
+                placeholder="Example: 4"
+            >
+
+            <div
+                class="err"
+                id="singleErr"
+            ></div>
+
+        </div>
+
+
+        <!-- BURST ERROR -->
+
+        <div
+            class="subform"
+            id="burstForm"
+        >
+
+            <div class="row">
+
+                <div>
+
+                    <label for="startIn">
+                        Start Position
+                    </label>
+
+                    <input
+                        type="text"
+                        id="startIn"
+                        placeholder="Example: 3"
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label for="lenIn">
+                        Burst Length
+                    </label>
+
+                    <input
+                        type="text"
+                        id="lenIn"
+                        placeholder="Example: 3"
+                    >
+
+                </div>
+
+            </div>
+
+            <div
+                class="err"
+                id="burstErr"
+            ></div>
+
+        </div>
+
+
+        <button
+            class="primary"
+            id="sendBtn"
+        >
+            Send Through Channel
+        </button>
+
+    </div>
+
+
+    <!-- RECEIVER -->
+
+    <div
+        class="card hidden"
+        id="receiverCard"
+    >
+
+        <p class="section-label">
+            Receiver
+        </p>
+
+
+        <div class="readout">
+
+            <div>
+                <span class="k">Transmitted</span>
+                <span id="rTx"></span>
+            </div>
+
+            <div>
+                <span class="k">Received</span>
+                <span id="rRx"></span>
+            </div>
+
+            <div>
+                <span class="k">Remainder</span>
+                <span id="rRem"></span>
+            </div>
+
+        </div>
+
+
+        <div
+            class="status"
+            id="statusBox"
+        ></div>
+
+
+        <p
+            class="hint"
+            id="eventHint"
+        ></p>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* -----------------------------------
+   VALIDATION
+----------------------------------- */
+
+function isBinary(s) {
+
+    return (
+        s.length > 0 &&
+        [...s].every(c => c === '0' || c === '1')
+    );
+
+}
+
+
+function validGenerator(g) {
+
+    return (
+        isBinary(g) &&
+        g.length >= 2 &&
+        g[0] === '1' &&
+        g[g.length - 1] === '1'
+    );
+
+}
+
+
+/* -----------------------------------
+   MODULO-2 DIVISION
+----------------------------------- */
+
+function mod2divide(input, gen) {
+
+    let rem = input.split('');
+
+    for (
+        let i = 0;
+        i <= rem.length - gen.length;
+        i++
+    ) {
+
+        if (rem[i] === '1') {
+
+            for (
+                let j = 0;
+                j < gen.length;
+                j++
+            ) {
+
+                rem[i + j] =
+                    (rem[i + j] === gen[j])
+                    ? '0'
+                    : '1';
+
+            }
+
+        }
+
+    }
+
+    return rem
+        .join('')
+        .slice(rem.length - (gen.length - 1));
+
+}
+
+
+/* -----------------------------------
+   CRC CALCULATION
+----------------------------------- */
+
+function calculateCRC(data, gen) {
+
+    return mod2divide(
+        data + '0'.repeat(gen.length - 1),
+        gen
+    );
+
+}
+
+
+/* -----------------------------------
+   APPLICATION STATE
+----------------------------------- */
+
+let state = {
+
+    data: '',
+    gen: '',
+    codeword: '',
+    txLen: 0
+
+};
+
+
+let mode = 'none';
+
+
+const $ = id =>
+    document.getElementById(id);
+
+
+/* -----------------------------------
+   TRANSMIT BUTTON
+----------------------------------- */
+
+$('transmitBtn').addEventListener(
+    'click',
+    function () {
+
+        const data =
+            $('dataIn').value.trim();
+
+        const gen =
+            $('genIn').value.trim();
+
+        const errBox =
+            $('setupErr');
+
+        errBox.textContent = '';
+
+
+        /* Validate data */
+
+        if (!isBinary(data)) {
+
+            errBox.textContent =
+                'Data must contain only 0 and 1.';
+
+            return;
+
+        }
+
+
+        /* Validate generator */
+
+        if (!validGenerator(gen)) {
+
+            errBox.textContent =
+                'Generator must be binary, have length >= 2, and start/end with 1.';
+
+            return;
+
+        }
+
+
+        /* Calculate CRC */
+
+        const crc =
+            calculateCRC(data, gen);
+
+
+        /* Create codeword */
+
+        const codeword =
+            data + crc;
+
+
+        /* Store state */
+
+        state = {
+
+            data: data,
+            gen: gen,
+            codeword: codeword,
+            txLen: codeword.length
+
+        };
+
+
+        /* Display results */
+
+        $('sData').textContent =
+            data;
+
+        $('sCrc').textContent =
+            crc;
+
+        $('sCode').textContent =
+            codeword;
+
+
+        /* Show next sections */
+
+        $('senderCard')
+            .classList
+            .remove('hidden');
+
+        $('channelCard')
+            .classList
+            .remove('hidden');
+
+        $('receiverCard')
+            .classList
+            .add('hidden');
+
+
+        /* Reset mode */
+
+        document
+            .querySelectorAll('.subform')
+            .forEach(
+                f => f.classList.remove('open')
+            );
+
+
+        document
+            .querySelectorAll('.channel-btns button')
+            .forEach(
+                b => b.classList.remove('selected')
+            );
+
+
+        document
+            .querySelector(
+                '.channel-btns button[data-mode="none"]'
+            )
+            .classList
+            .add('selected');
+
+
+        mode = 'none';
+
+    }
+);
+
+
+/* -----------------------------------
+   ERROR MODE BUTTONS
+----------------------------------- */
+
+document
+    .querySelectorAll('.channel-btns button')
+    .forEach(btn => {
+
+        btn.addEventListener(
+            'click',
+            function () {
+
+                mode =
+                    btn.dataset.mode;
+
+
+                document
+                    .querySelectorAll(
+                        '.channel-btns button'
+                    )
+                    .forEach(
+                        b => b.classList.remove('selected')
+                    );
+
+
+                btn.classList.add('selected');
+
+
+                $('singleForm')
+                    .classList
+                    .toggle(
+                        'open',
+                        mode === 'single'
+                    );
+
+
+                $('burstForm')
+                    .classList
+                    .toggle(
+                        'open',
+                        mode === 'burst'
+                    );
+
+            }
+
+        );
+
+    });
+
+
+/* -----------------------------------
+   SEND THROUGH CHANNEL
+----------------------------------- */
+
+$('sendBtn').addEventListener(
+    'click',
+    function () {
+
+        const n =
+            state.txLen;
+
+
+        let received =
+            state.codeword;
+
+
+        let eventText =
+            'Data transmitted without errors.';
+
+
+        /* SINGLE BIT ERROR */
+
+        if (mode === 'single') {
+
+            const errBox =
+                $('singleErr');
+
+            errBox.textContent = '';
+
+
+            const pos =
+                parseInt(
+                    $('posIn').value,
+                    10
+                );
+
+
+            if (
+                !Number.isInteger(pos) ||
+                pos < 1 ||
+                pos > n
+            ) {
+
+                errBox.textContent =
+                    `Enter a position between 1 and ${n}.`;
+
+                return;
+
+            }
+
+
+            const chars =
+                received.split('');
+
+
+            const index =
+                pos - 1;
+
+
+            /* Flip bit */
+
+            chars[index] =
+                chars[index] === '0'
+                ? '1'
+                : '0';
+
+
+            received =
+                chars.join('');
+
+
+            eventText =
+                `Single-bit error at position ${pos}.`;
+
+        }
+
+
+        /* BURST ERROR */
+
+        else if (mode === 'burst') {
+
+            const errBox =
+                $('burstErr');
+
+            errBox.textContent = '';
+
+
+            const start =
+                parseInt(
+                    $('startIn').value,
+                    10
+                );
+
+
+            if (
+                !Number.isInteger(start) ||
+                start < 1 ||
+                start > n
+            ) {
+
+                errBox.textContent =
+                    `Enter a start position between 1 and ${n}.`;
+
+                return;
+
+            }
+
+
+            const maxLen =
+                n - start + 1;
+
+
+            const len =
+                parseInt(
+                    $('lenIn').value,
+                    10
+                );
+
+
+            if (
+                !Number.isInteger(len) ||
+                len < 1 ||
+                len > maxLen
+            ) {
+
+                errBox.textContent =
+                    `Enter a burst length between 1 and ${maxLen}.`;
+
+                return;
+
+            }
+
+
+            const chars =
+                received.split('');
+
+
+            /* Flip consecutive bits */
+
+            for (
+                let i = 0;
+                i < len;
+                i++
+            ) {
+
+                const index =
+                    start - 1 + i;
+
+
+                chars[index] =
+                    chars[index] === '0'
+                    ? '1'
+                    : '0';
+
+            }
+
+
+            received =
+                chars.join('');
+
+
+            eventText =
+                `Burst error from position ${start} (${len} bits).`;
+
+        }
+
+
+        /* -----------------------------------
+           RECEIVER CRC CHECK
+        ----------------------------------- */
+
+        const remainder =
+            mod2divide(
+                received,
+                state.gen
+            );
+
+
+        const valid =
+            [...remainder]
+                .every(
+                    b => b === '0'
+                );
+
+
+        /* Display receiver information */
+
+        $('rTx').textContent =
+            state.codeword;
+
+
+        $('rRx').innerHTML =
+            highlightDiff(
+                state.codeword,
+                received
+            );
+
+
+        $('rRem').textContent =
+            remainder;
+
+
+        $('eventHint').textContent =
+            eventText;
+
+
+        /* Display status */
+
+        const box =
+            $('statusBox');
+
+
+        box.className =
+            'status ' +
+            (valid ? 'ok' : 'bad');
+
+
+        box.innerHTML =
+            `<span class="dot"></span>` +
+            (
+                valid
+                ? 'No error detected'
+                : 'Error detected'
+            );
+
+
+        /* Show receiver */
+
+        $('receiverCard')
+            .classList
+            .remove('hidden');
+
+    }
+);
+
+
+/* -----------------------------------
+   HIGHLIGHT DIFFERENT BITS
+----------------------------------- */
+
+function highlightDiff(tx, rx) {
+
+    let output = '';
+
+
+    for (
+        let i = 0;
+        i < rx.length;
+        i++
+    ) {
+
+        if (tx[i] !== rx[i]) {
+
+            output +=
+                `<span class="diff-hi">${rx[i]}</span>`;
+
+        }
+
+        else {
+
+            output += rx[i];
+
+        }
+
+    }
+
+
+    return output;
+
+}
+
+</script>
+
+</body>
+</html>
